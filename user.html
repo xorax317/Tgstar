@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <title>User Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      animation: fadeIn 1.5s ease;
+    }
+
+    h2 {
+      font-size: 32px;
+      margin-bottom: 15px;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      margin: 25px 0;
+      width: 90%;
+      max-width: 800px;
+      animation: slideIn 1s ease forwards;
+      opacity: 0;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    #totalUsers {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.05);
+      font-weight: 600;
+      color: #00c6ff;
+    }
+
+    td {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    button {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+      margin-top: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(0, 198, 255, 0.6);
+      background: linear-gradient(90deg, #00e6ff, #008cff);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 8px rgba(0, 198, 255, 0.4);
+    }
+
+    .menu-ball {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image: url('https://i.ibb.co/vvd0jzJP/file-50.jpg');
+      background-size: cover;
+      background-position: center;
+      color: transparent;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .menu-ball:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 16px rgba(0, 198, 255, 0.6);
+    }
+
+    .menu-ball.active {
+      background: linear-gradient(90deg, #ff5555, #ff2a2a);
+      background-image: url('https://i.ibb.co/vvd0jzJP/file-50.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .menu-ball.active:hover {
+      background: linear-gradient(90deg, #ff7777, #ff4d4d);
+      background-image: url('https://i.ibb.co/vvd0jzJP/file-50.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .side-menu {
+      position: fixed;
+      top: 0;
+      left: -250px;
+      width: 250px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-right: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 20px;
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      z-index: 999;
+      transform: perspective(600px) rotateY(-10deg);
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .side-menu.open {
+      left: 0;
+      transform: perspective(600px) rotateY(0deg);
+      opacity: 1;
+    }
+
+    .side-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      text-align: center;
+    }
+
+    .side-menu li {
+      margin: 15px 0;
+      animation: botMenuItem 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      animation-delay: calc(var(--item-index) * 0.15s);
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .side-menu.open li {
+      opacity: 1;
+    }
+
+    .side-menu li:hover {
+      box-shadow: 0 0 10px rgba(0, 198, 255, 0.7);
+      transform: scale(1.05);
+    }
+
+    .side-menu a {
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+      display: block;
+      padding: 10px;
+      border-radius: 10px;
+      transition: background 0.2s, transform 0.2s;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .side-menu a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateX(5px);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes botMenuItem {
+      0% {
+        transform: translateY(20px) scale(0.95);
+        opacity: 0;
+      }
+      50% {
+        transform: translateY(0) scale(1.05);
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 600px) {
+      h2 {
+        font-size: 24px;
+      }
+
+      .card {
+        padding: 15px;
+        max-width: 100%;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+
+      button {
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+
+      .side-menu {
+        width: 200px;
+        left: -200px;
+      }
+
+      .menu-ball {
+        width: 32px;
+        height: 32px;
+      }
+
+      #totalUsers {
+        font-size: 16px;
+      }
+    }
+
+    button:focus {
+      outline: 2px solid #00c6ff;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <button class="menu-ball" id="menuBtn"></button>
+  <div class="side-menu" id="sideMenu">
+    <ul>
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="calm.html">Claim Star</a></li>
+      <li><a href="gift.html">Gift Star</a></li>
+      <li><a href="adimnget.html">Orders</a></li>
+    </ul>
+  </div>
+  <h2>User Management</h2>
+  <div class="card">
+    <div id="totalUsers">Total Users: <span id="userCount">0</span></div>
+    <table id="userTable">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Stars</th>
+          <th>Creation Date</th>
+          <th>Password</th>
+        </tr>
+      </thead>
+      <tbody id="userList"></tbody>
+    </table>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSTtq5pB7AAWlFAl-5D0Te1_dN5vP_kVI",
+      authDomain: "adimn-user.firebaseapp.com",
+      projectId: "adimn-user",
+      storageBucket: "adimn-user.firebasestorage.app",
+      messagingSenderId: "1003269507396",
+      appId: "1:1003269507396:web:c5004b818985b1c2faef11",
+      measurementId: "G-K1Y2VEP13H"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const userList = document.getElementById("userList");
+    const userCount = document.getElementById("userCount");
+    const menuBtn = document.getElementById("menuBtn");
+    const sideMenu = document.getElementById("sideMenu");
+
+    // Toggle side menu
+    menuBtn.onclick = () => {
+      sideMenu.classList.toggle("open");
+      menuBtn.classList.toggle("active");
+      const menuItems = sideMenu.querySelectorAll('li');
+      menuItems.forEach((item, index) => {
+        item.style.setProperty('--item-index', index);
+      });
+    };
+
+    // Check authentication and restrict access
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        if (user.email.toLowerCase() !== 'dslash063@gmail.com') {
+          window.location.href = "dashboard.html"; // Redirect non-admin users
+          return;
+        }
+        try {
+          // Fetch all users from Firestore
+          const usersCollection = collection(db, "users");
+          const usersSnapshot = await getDocs(usersCollection);
+          let totalUsers = 0;
+          const userRows = [];
+
+          // Fetch current user's creation date
+          const currentUserCreationDate = new Date(user.metadata.creationTime).toLocaleDateString();
+
+          // Build user table
+          usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            const isCurrentUser = doc.id === user.uid;
+            userRows.push(`
+              <tr>
+                <td>${userData.email || "N/A"}</td>
+                <td>${userData.stars || 0}</td>
+                <td>${isCurrentUser ? currentUserCreationDate : "N/A"}</td>
+                <td>********</td>
+              </tr>
+            `);
+            totalUsers++;
+          });
+
+          // Display total users and user table
+          userCount.textContent = totalUsers;
+          userList.innerHTML = userRows.join("");
+        } catch (error) {
+          console.error("Error fetching users:", error);
+          userList.innerHTML = `<tr><td colspan="4">Failed to load users. Please try again.</td></tr>`;
+        }
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    // Logout functionality
+    document.getElementById("logoutBtn").onclick = async () => {
+      await signOut(auth);
+    };
+  </script>
+</body>
+</html>

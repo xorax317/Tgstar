@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Star Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      animation: fadeIn 1.5s ease;
+    }
+
+    h2 {
+      font-size: 32px;
+      margin-bottom: 15px;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      margin: 25px 0;
+      width: 90%;
+      max-width: 450px;
+      animation: slideIn 1s ease forwards;
+      opacity: 0;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    #balanceDisplay {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 12px 20px;
+      border-radius: 25px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      font-size: 16px;
+      gap: 10px;
+      animation: fadeIn 2s ease-in-out;
+      transition: transform 0.3s ease;
+    }
+
+    #balanceDisplay:hover {
+      transform: scale(1.05);
+    }
+
+    #balanceDisplay::before {
+      content: "⭐";
+      font-size: 22px;
+      filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+      display: inline-block;
+    }
+
+    #stars.animate + #balanceDisplay::before {
+      animation: spinStar 0.6s ease;
+    }
+
+    #timer {
+      position: fixed;
+      top: 20px;
+      left: 60px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 8px 15px;
+      border-radius: 25px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffcc00;
+      animation: fadeIn 2s ease-in-out;
+    }
+
+    button {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+      margin-top: 12px;
+    }
+
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(0, 198, 255, 0.6);
+      background: linear-gradient(90deg, #00e6ff, #008cff);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 8px rgba(0, 198, 255, 0.4);
+    }
+
+    #quizArea button {
+      margin-top: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 15px;
+      width: 100%;
+      text-align: left;
+      padding: 12px 20px;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    #quizArea button:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateX(5px);
+    }
+
+    #stopQuizBtn {
+      background: linear-gradient(90deg, #ff5555, #ff2a2a);
+    }
+
+    #stopQuizBtn:hover {
+      background: linear-gradient(90deg, #ff7777, #ff4d4d);
+    }
+
+    .question {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+    }
+
+    .question p {
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    #previousQuestions {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    #previousQuestions p {
+      font-size: 12px;
+      line-height: 1.4;
+      margin: 8px 0;
+      padding-bottom: 8px;
+      color: rgba(255, 255, 255, 0.7);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #previousQuestions p:last-child {
+      border-bottom: none;
+    }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      z-index: 1000;
+      animation: popIn 0.3s ease;
+      display: none;
+    }
+
+    .modal.correct {
+      border: 2px solid #00ffcc;
+    }
+
+    .modal.wrong {
+      border: 2px solid #ff5555;
+    }
+
+    .modal.timeout {
+      border: 2px solid #ffcc00;
+    }
+
+    .telegram-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      z-index: 1001; /* Higher than other modals */
+      animation: popIn 0.5s ease forwards;
+      display: none;
+      max-width: 350px;
+      width: 80%;
+      border: 2px solid #00c6ff;
+    }
+
+    .telegram-modal p {
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .telegram-modal a#telegramBtn {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 50px;
+      background: linear-gradient(90deg, #0088cc, #00c6ff);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+    }
+
+    .telegram-modal a#telegramBtn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(0, 198, 255, 0.6);
+      background: linear-gradient(90deg, #00aaff, #00e6ff);
+    }
+
+    .telegram-modal button#closeTelegramBtn {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 50px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .telegram-modal button#closeTelegramBtn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .menu-ball {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image: url('https://i.ibb.co/vvd0jzJP/file-50.jpg');
+      background-size: cover;
+      background-position: center;
+      color: transparent;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .menu-ball:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 16px rgba(0, 198, 255, 0.6);
+    }
+
+    .menu-ball.active {
+      background: linear-gradient(90deg, #ff5555, #ff2a2a);
+      background-image: url('https://i.ibb.co/vvd0jzJP/file-50.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .menu-ball.active:hover {
+      background: linear-gradient(90deg, #ff7777, #ff4d4d);
+      background-image: url('https://i.ibb.co/vvd0jzJP/file-50.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .side-menu {
+      position: fixed;
+      top: 0;
+      left: -250px;
+      width: 250px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-right: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 20px;
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      z-index: 999;
+      transform: perspective(600px) rotateY(-10deg);
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .side-menu.open {
+      left: 0;
+      transform: perspective(600px) rotateY(0deg);
+      opacity: 1;
+    }
+
+    .side-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      text-align: center;
+    }
+
+    .side-menu li {
+      margin: 15px 0;
+      animation: botMenuItem 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      animation-delay: calc(var(--item-index) * 0.15s);
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .side-menu.open li {
+      opacity: 1;
+    }
+
+    .side-menu li:hover {
+      box-shadow: 0 0 10px rgba(0, 198, 255, 0.7);
+      transform: scale(1.05);
+    }
+
+    .side-menu a {
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+      display: block;
+      padding: 10px;
+      border-radius: 10px;
+      transition: background 0.2s, transform 0.2s;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .side-menu a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateX(5px);
+    }
+
+    @keyframes popIn {
+      from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+      to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    @keyframes slideInRight {
+      from { right: -100px; }
+      to { right: 20px; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes spinStar {
+      0% { transform: rotate(0deg) scale(1); color: #fff; }
+      50% { transform: rotate(180deg) scale(1.3); color: #00ffcc; }
+      100% { transform: rotate(360deg) scale(1); color: #fff; }
+    }
+
+    @keyframes botMenuItem {
+      0% {
+        transform: translateY(20px) scale(0.95);
+        opacity: 0;
+      }
+      50% {
+        transform: translateY(0) scale(1.05);
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .typing {
+      border-right: 2px solid #fff;
+      white-space: normal;
+      overflow: hidden;
+      width: 0;
+      animation: typing 3.5s steps(50, end) forwards, blink-caret 0.75s step-end infinite;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    @keyframes typing {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    @keyframes blink-caret {
+      from, to { border-color: transparent; }
+      50% { border-color: #fff; }
+    }
+
+    @media (max-width: 600px) {
+      h2 {
+        font-size: 24px;
+      }
+
+      .card {
+        padding: 20px;
+        max-width: 100%;
+      }
+
+      #balanceDisplay {
+        top: 10px;
+        right: 10px;
+        padding: 8px 14px;
+        font-size: 14px;
+      }
+
+      #timer {
+        top: 10px;
+        left: 50px;
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+
+      button {
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+
+      .modal {
+        width: 80%;
+        font-size: 16px;
+        padding: 15px;
+      }
+
+      .telegram-modal {
+        width: 90%;
+        padding: 15px;
+        font-size: 14px;
+      }
+
+      .telegram-modal a#telegramBtn {
+        padding: 10px 20px;
+        font-size: 12px;
+      }
+
+      .telegram-modal button#closeTelegramBtn {
+        padding: 8px 16px;
+        font-size: 12px;
+      }
+
+      #previousQuestions p {
+        font-size: 11px;
+      }
+
+      .side-menu {
+        width: 200px;
+        left: -200px;
+      }
+
+      .menu-ball {
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    button:focus {
+      outline: 2px solid #00c6ff;
+      outline-offset: 2px;
+    }
+
+    .card p {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <button class="menu-ball" id="menuBtn"></button>
+  <div class="side-menu" id="sideMenu">
+    <ul>
+      <li><a href="calm.html">Claim Star</a></li>
+      <li><a href="gift.html">Gift Star</a></li>
+      <li><a href="adimnget.html">Orders</a></li>
+      <li><a href="user.html">Users</a></li>
+    </ul>
+  </div>
+  <div id="balanceDisplay">
+    <span id="stars">0</span>
+  </div>
+  <div id="timer" style="display: none;">12</div>
+  <div id="modal" class="modal"></div>
+  <div id="telegramDialog" class="telegram-modal">
+    <p>Join our Telegram community for updates and rewards!</p>
+    <a href="https://t.me/xorax_team" target="_blank" id="telegramBtn">Join Xorax Team</a>
+    <button id="closeTelegramBtn">Close</button>
+  </div>
+
+  <h2>Welcome to Star Dashboard</h2>
+  <div class="card">
+    <p><strong>Email:</strong> <span id="userEmail"></span></p>
+    <button id="getQuestionBtn">Start Quiz (Get +3/-2 Stars)</button>
+    <button id="stopQuizBtn" style="display: none;">Stop Quiz</button>
+    <div id="quizArea" style="margin-top: 20px;"></div>
+    <div id="previousQuestions"></div>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSTtq5pB7AAWlFAl-5D0Te1_dN5vP_kVI",
+      authDomain: "adimn-user.firebaseapp.com",
+      projectId: "adimn-user",
+      storageBucket: "adimn-user.firebasestorage.app",
+      messagingSenderId: "1003269507396",
+      appId: "1:1003269507396:web:c5004b818985b1c2faef11",
+      measurementId: "G-K1Y2VEP13H"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const starsEl = document.getElementById("stars");
+    const emailEl = document.getElementById("userEmail");
+    const quizArea = document.getElementById("quizArea");
+    const previousQuestionsEl = document.getElementById("previousQuestions");
+    const modalEl = document.getElementById("modal");
+    const timerEl = document.getElementById("timer");
+    const getQuestionBtn = document.getElementById("getQuestionBtn");
+    const stopQuizBtn = document.getElementById("stopQuizBtn");
+    const menuBtn = document.getElementById("menuBtn");
+    const sideMenu = document.getElementById("sideMenu");
+    const telegramDialog = document.getElementById("telegramDialog");
+    const closeTelegramBtn = document.getElementById("closeTelegramBtn");
+
+    let currentUser = null;
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let previousQuestions = [];
+    let timerId = null;
+
+    // Show Telegram dialog on page load
+    window.onload = () => {
+      telegramDialog.style.display = "block";
+    };
+
+    // Close Telegram dialog
+    closeTelegramBtn.onclick = () => {
+      telegramDialog.style.display = "none";
+    };
+
+    // Toggle side menu
+    menuBtn.onclick = () => {
+      sideMenu.classList.toggle("open");
+      menuBtn.classList.toggle("active");
+      const menuItems = sideMenu.querySelectorAll('li');
+      menuItems.forEach((item, index) => {
+        item.style.setProperty('--item-index', index);
+      });
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        emailEl.textContent = user.email;
+
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          // New user: Initialize with 5 stars
+          await setDoc(userRef, { stars: 5, email: user.email });
+          starsEl.textContent = 5;
+          // Trigger animation for stars
+          starsEl.classList.add("animate");
+          setTimeout(() => starsEl.classList.remove("animate"), 600);
+          // Show modal for new user reward
+          showModal("Welcome! You've been rewarded 5 stars as a new user!", 'correct');
+        } else {
+          // Existing user: Display their current stars
+          starsEl.textContent = userSnap.data().stars;
+        }
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    document.getElementById("logoutBtn").onclick = async () => {
+      await signOut(auth);
+    };
+
+    function showModal(message, type) {
+      modalEl.textContent = message;
+      modalEl.className = `modal ${type}`;
+      modalEl.style.display = 'block';
+      setTimeout(() => {
+        modalEl.style.display = 'none';
+      }, 2000);
+    }
+
+    function startTimer() {
+      let timeLeft = 12;
+      timerEl.textContent = timeLeft;
+      timerEl.style.display = 'block';
+      clearInterval(timerId);
+      timerId = setInterval(async () => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerId);
+          timerEl.style.display = 'none';
+          const userRef = doc(db, "users", currentUser.uid);
+          const snap = await getDoc(userRef);
+          let stars = snap.data().stars || 0;
+          stars = Math.max(0, stars - 1);
+          await updateDoc(userRef, { stars });
+          starsEl.textContent = stars;
+          starsEl.classList.add("animate");
+          setTimeout(() => starsEl.classList.remove("animate"), 600);
+          showModal("Time's up! -1 Star", 'timeout');
+
+          previousQuestions.push(questions[currentQuestionIndex].question);
+          if (previousQuestions.length > 10) previousQuestions.shift();
+
+          currentQuestionIndex++;
+          if (currentQuestionIndex < questions.length) {
+            document.querySelectorAll(".question").forEach(q => q.style.display = "none");
+            document.getElementById(`question-${currentQuestionIndex}`).style.display = "block";
+            displayQuestions();
+          } else {
+            loadNewQuestions();
+          }
+        }
+      }, 1000);
+    }
+
+    async function loadNewQuestions() {
+      quizArea.innerHTML = "Loading questions...";
+      stopQuizBtn.style.display = 'block';
+      try {
+        const res = await fetch("https://opentdb.com/api.php?amount=5");
+        const data = await res.json();
+        questions = data.results.map(q => ({
+          question: q.question,
+          answers: [...q.incorrect_answers, q.correct_answer].sort(() => Math.random() - 0.5),
+          correct_answer: q.correct_answer
+        }));
+        currentQuestionIndex = 0;
+        displayQuestions();
+      } catch (error) {
+        quizArea.innerHTML = "Failed to load questions. Please try again.";
+        console.error("Error fetching questions:", error);
+      }
+    }
+
+    function stopQuiz() {
+      clearInterval(timerId);
+      timerEl.style.display = 'none';
+      quizArea.innerHTML = "";
+      questions = [];
+      currentQuestionIndex = 0;
+      stopQuizBtn.style.display = 'none';
+      previousQuestionsEl.innerHTML = previousQuestions.length > 0
+        ? previousQuestions.map((q, i) => `<p>${i + 1}. ${q}</p>`).join("")
+        : "<p>No questions answered yet.</p>";
+    }
+
+    function displayQuestions() {
+      quizArea.innerHTML = questions.map((q, index) => `
+        <div class="question" id="question-${index}" style="${index !== currentQuestionIndex ? 'display: none;' : ''}">
+          <p class="typing">${q.question}</p>
+          <div class="answerList" style="animation: fadeIn 1.5s ease;">
+            ${q.answers.map(ans => `
+              <button class="answerBtn" data-index="${index}" data-correct="${ans === q.correct_answer}">${ans}</button>
+            `).join("")}
+          </div>
+        </div>
+      `).join("");
+
+      previousQuestionsEl.innerHTML = previousQuestions.length > 0
+        ? previousQuestions.map((q, i) => `<p>${i + 1}. ${q}</p>`).join("")
+        : "<p>No questions answered yet.</p>";
+
+      startTimer();
+
+      document.querySelectorAll(".answerBtn").forEach(btn => {
+        btn.onclick = async () => {
+          const index = parseInt(btn.getAttribute("data-index"));
+          if (index !== currentQuestionIndex) return;
+
+          clearInterval(timerId);
+          timerEl.style.display = 'none';
+          const correct = btn.getAttribute("data-correct") === "true";
+          const userRef = doc(db, "users", currentUser.uid);
+          const snap = await getDoc(userRef);
+          let stars = snap.data().stars || 0;
+
+          if (correct) {
+            stars += 3;
+            showModal("Correct! +3 Stars", 'correct');
+          } else {
+            stars = Math.max(0, stars - 2);
+            showModal("Wrong! -2 Stars", 'wrong');
+          }
+
+          previousQuestions.push(questions[currentQuestionIndex].question);
+          if (previousQuestions.length > 10) previousQuestions.shift();
+
+          await updateDoc(userRef, { stars });
+          starsEl.textContent = stars;
+          starsEl.classList.add("animate");
+          setTimeout(() => starsEl.classList.remove("animate"), 600);
+
+          currentQuestionIndex++;
+          if (currentQuestionIndex < questions.length) {
+            document.querySelectorAll(".question").forEach(q => q.style.display = "none");
+            document.getElementById(`question-${currentQuestionIndex}`).style.display = "block";
+            displayQuestions();
+          } else {
+            loadNewQuestions();
+          }
+        };
+      });
+    }
+
+    getQuestionBtn.onclick = loadNewQuestions;
+    stopQuizBtn.onclick = stopQuiz;
+  </script>
+</body>
+</html>
+
+

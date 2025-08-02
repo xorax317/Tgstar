@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Send Stars</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      animation: fadeIn 1.5s ease;
+    }
+
+    h2 {
+      font-size: 32px;
+      margin-bottom: 15px;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      margin: 25px 0;
+      width: 90%;
+      max-width: 450px;
+      animation: slideIn 1s ease forwards;
+      opacity: 0;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .card p {
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    input {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+      margin-top: 12px;
+      width: 100%;
+    }
+
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(0, 198, 255, 0.6);
+      background: linear-gradient(90deg, #00e6ff, #008cff);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 8px rgba(0, 198, 255, 0.4);
+    }
+
+    #backBtn {
+      background: linear-gradient(90deg, #ff5555, #ff2a2a);
+    }
+
+    #backBtn:hover {
+      background: linear-gradient(90deg, #ff7777, #ff4d4d);
+    }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      z-index: 1000;
+      animation: popIn 0.3s ease;
+      display: none;
+    }
+
+    .modal.correct {
+      border: 2px solid #00ffcc;
+    }
+
+    .modal.wrong {
+      border: 2px solid #ff5555;
+    }
+
+    @keyframes popIn {
+      from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+      to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @media (max-width: 600px) {
+      h2 {
+        font-size: 24px;
+      }
+
+      .card {
+        padding: 20px;
+        max-width: 100%;
+      }
+
+      button {
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+
+      .modal {
+        width: 80%;
+        font-size: 16px;
+        padding: 15px;
+      }
+
+      input {
+        font-size: 12px;
+      }
+    }
+
+    button:focus {
+      outline: 2px solid #00c6ff;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="modal" class="modal"></div>
+  <h2>Send Stars</h2>
+  <div class="card">
+    <p><strong>Admin:</strong> <span id="adminEmail"></span></p>
+    <p>Enter user email:</p>
+    <input type="email" id="userEmail" placeholder="Enter user email">
+    <p>Enter stars to send (1–100):</p>
+    <input type="number" id="starAmount" min="1" max="100" placeholder="Enter amount">
+    <button id="sendStarsBtn">Send Stars</button>
+    <button id="backBtn">Back to Dashboard</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBSTtq5pB7AAWlFAl-5D0Te1_dN5vP_kVI",
+      authDomain: "adimn-user.firebaseapp.com",
+      projectId: "adimn-user",
+      storageBucket: "adimn-user.firebasestorage.app",
+      messagingSenderId: "1003269507396",
+      appId: "1:1003269507396:web:c5004b818985b1c2faef11",
+      measurementId: "G-K1Y2VEP13H"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const adminEmailEl = document.getElementById("adminEmail");
+    const userEmailEl = document.getElementById("userEmail");
+    const starAmountEl = document.getElementById("starAmount");
+    const sendStarsBtn = document.getElementById("sendStarsBtn");
+    const backBtn = document.getElementById("backBtn");
+    const modalEl = document.getElementById("modal");
+
+    let currentUser = null;
+
+    function showModal(message, type) {
+      modalEl.textContent = message;
+      modalEl.className = `modal ${type}`;
+      modalEl.style.display = 'block';
+      setTimeout(() => {
+        modalEl.style.display = 'none';
+      }, 2000);
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        console.log("Logged-in email:", user.email); // Debug log
+        adminEmailEl.textContent = user.email;
+
+        if (user.email.toLowerCase() === "dslash063@gmail.com") {
+          console.log("Admin access granted for dslash063@gmail.com");
+        } else {
+          console.log("Access denied for email:", user.email);
+          showModal("Access denied. Only dslash063@gmail.com can access this page.", 'wrong');
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 2000);
+        }
+      } else {
+        console.log("No user logged in, redirecting to index.html");
+        window.location.href = "index.html";
+      }
+    });
+
+    sendStarsBtn.onclick = async () => {
+      const targetEmail = userEmailEl.value.trim().toLowerCase();
+      const amount = parseInt(starAmountEl.value);
+
+      if (!targetEmail) {
+        showModal("Please enter a valid email.", 'wrong');
+        return;
+      }
+
+      if (isNaN(amount) || amount < 1 || amount > 100) {
+        showModal("Please enter a number between 1 and 100.", 'wrong');
+        return;
+      }
+
+      try {
+        // Find user by email
+        const usersQuery = query(collection(db, "users"), where("email", "==", targetEmail));
+        const querySnapshot = await getDocs(usersQuery);
+
+        if (querySnapshot.empty) {
+          showModal("User not found.", 'wrong');
+          return;
+        }
+
+        const userDoc = querySnapshot.docs[0];
+        const userRef = doc(db, "users", userDoc.id);
+        const userData = userDoc.data();
+        const currentStars = userData.stars || 0;
+
+        // Update user's stars
+        await updateDoc(userRef, {
+          stars: currentStars + amount
+        });
+
+        showModal(`Successfully sent ${amount} stars to ${targetEmail}!`, 'correct');
+        userEmailEl.value = '';
+        starAmountEl.value = '';
+      } catch (error) {
+        showModal("Failed to send stars. Try again.", 'wrong');
+        console.error("Error sending stars:", error);
+      }
+    };
+
+    backBtn.onclick = () => {
+      window.location.href = "dashboard.html";
+    };
+  </script>
+</body>
+</html>
